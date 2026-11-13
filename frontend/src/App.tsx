@@ -36,7 +36,7 @@ export default function App() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <header className="mb-8 flex items-center gap-3 print:mb-4">
         <Gauge aria-hidden="true" className="h-8 w-8 text-sky-600" />
         <div>

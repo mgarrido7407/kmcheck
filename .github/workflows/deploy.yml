@@ -1,0 +1,107 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Configurar SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          SSH_PORT="${VPS_PORT:-22}"
+          ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Subir proyecto al VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+        run: |
+          SSH_PORT="${VPS_PORT:-22}"
+          REMOTE_DIR="${VPS_DEPLOY_PATH:-/var/www/kmcheck}"
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "${VPS_USER}@${VPS_HOST}" "mkdir -p '$REMOTE_DIR'"
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'backend/.env' \
+            --exclude '.wrangler' \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+            ./ "${VPS_USER}@${VPS_HOST}:${REMOTE_DIR}/"
+
+      - name: Instalar dependencias, configurar .env y reiniciar PM2
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+          APP_PORT: ${{ vars.APP_PORT }}
+          CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          SSH_PORT="${VPS_PORT:-22}"
+          REMOTE_DIR="${VPS_DEPLOY_PATH:-/var/www/kmcheck}"
+          APP_PORT_VAL="${APP_PORT:-5050}"
+          CORS_VAL="${CORS_ORIGIN:-http://${VPS_HOST}}"
+          AI_PROVIDER_VAL="${AI_PROVIDER:-rules}"
+
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "${VPS_USER}@${VPS_HOST}" bash -s <<EOF
+            set -e
+            cd "$REMOTE_DIR"
+
+            printf '%s\n' \
+              "PORT=${APP_PORT_VAL}" \
+              "CORS_ORIGIN=${CORS_VAL}" \
+              "AI_PROVIDER=${AI_PROVIDER_VAL}" \
+              "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}" \
+              "AI_MODEL=${AI_MODEL}" \
+              "AI_TIMEOUT_MS=30000" \
+              "RATE_LIMIT_MAX=20" \
+              "RATE_LIMIT_WINDOW_MS=60000" > backend/.env
+            chmod 600 backend/.env
+
+            npm ci
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm install -g pm2
+            fi
+
+            pm2 delete kmcheck >/dev/null 2>&1 || true
+            pm2 start npm --name "kmcheck" -- run start -w backend
+            pm2 save
+          EOF

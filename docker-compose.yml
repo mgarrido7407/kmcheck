@@ -21,7 +21,7 @@ services:
       dockerfile: deploy/Dockerfile.web
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "${WEB_PORT:-8080}:80"
     depends_on:
       backend:
         condition: service_healthy

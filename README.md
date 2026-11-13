@@ -86,7 +86,7 @@ La configuración está en `wrangler.jsonc`. **Nunca** pongas la API key en `var
 
 El proyecto incluye `docker-compose.yml` con dos servicios:
 - **`backend`**: Node 22 + Express (`deploy/Dockerfile.backend`), escuchando en el puerto interno `5050` (expuesto en `127.0.0.1:5050` para healthchecks).
-- **`web`**: build multi-stage de React servido por Nginx (`deploy/Dockerfile.web` + `deploy/nginx-docker.conf`) en el puerto `80`, con proxy de `/api/` hacia `backend:5050`.
+- **`web`**: build multi-stage de React servido por Nginx (`deploy/Dockerfile.web` + `deploy/nginx-docker.conf`) en el puerto `8080` (configurable con `WEB_PORT`), con proxy de `/api/` hacia `backend:5050`.
 
 ### Ejecución manual con Docker
 
@@ -95,7 +95,7 @@ cp backend/.env.example backend/.env   # ajusta PORT=5050, TRUST_PROXY=true y AI
 docker compose up -d --build
 ```
 
-La aplicación queda disponible en `http://localhost` (puerto `80`, personalizable con `WEB_PORT=8080 docker compose up -d --build`).
+La aplicación queda disponible en `http://localhost:8080` (personalizable con `WEB_PORT=80 docker compose up -d --build`).
 
 ### Despliegue automático en VPS (GitHub Actions)
 
@@ -112,7 +112,7 @@ El workflow `.github/workflows/deploy.yml` sincroniza el código por `rsync` y l
 
 **Variables en GitHub (`Settings > Secrets and variables > Actions > Variables`):**
 - `VPS_DEPLOY_PATH`: *(opcional)* ruta destino en el VPS (por defecto `/var/www/kmcheck`).
-- `WEB_PORT`: *(opcional)* puerto público de Nginx (por defecto `80`).
+- `WEB_PORT`: *(opcional)* puerto público de Nginx (por defecto `8080`).
 - `APP_PORT`: *(opcional)* puerto local en `127.0.0.1` para el healthcheck del backend (por defecto `5050`).
 - `CORS_ORIGIN`: *(opcional)* origen permitido (por defecto `http://<VPS_HOST>`).
 - `AI_PROVIDER` / `AI_MODEL`: *(opcional)* por defecto `rules`.

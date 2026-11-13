@@ -14,7 +14,13 @@ async function fill(values: Partial<Record<string, string>>) {
     symptoms: /síntomas/i,
   };
   for (const [k, v] of Object.entries(values)) {
-    if (v) await user.type(screen.getByLabelText(labels[k]!), v);
+    if (!v) continue;
+    const field = screen.getByLabelText(labels[k]!);
+    if (k === 'year') {
+      await user.selectOptions(field, v);
+    } else {
+      await user.type(field, v);
+    }
   }
   return user;
 }
@@ -81,5 +87,22 @@ describe('VehicleForm', () => {
     await user.click(screen.getByRole('button', { name: '+ Tironea en ralentí' }));
     await user.click(screen.getByRole('button', { name: '+ Tironea en ralentí' }));
     expect(screen.getByLabelText(/síntomas/i)).toHaveValue('Tironea en ralentí');
+  });
+
+  it('permite seleccionar marca y modelo popular desde los accesos rapidos', async () => {
+    const user = userEvent.setup();
+    render(<VehicleForm onSubmit={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Toyota' }));
+    expect(screen.getByLabelText(/marca/i)).toHaveValue('Toyota');
+    expect(screen.getByText(/modelos populares de toyota/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Corolla' }));
+    expect(screen.getByLabelText(/modelo/i)).toHaveValue('Corolla');
+
+    await user.click(screen.getByRole('button', { name: 'Mazda' }));
+    expect(screen.getByLabelText(/marca/i)).toHaveValue('Mazda');
+    expect(screen.getByLabelText(/modelo/i)).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'CX-5' })).toBeInTheDocument();
   });
 });

@@ -37,6 +37,7 @@ Documento generado tras la revisión multi-rol (**BMAD Party Mode**: Arquitectur
 | **M-03** | Historial local de diagnósticos recientes (`localStorage`) | ✅ Implementado | `frontend/src/App.tsx`, `frontend/src/hooks/useDiagnosticHistory.ts` | Guarda los últimos 8 diagnósticos en `kmcheck:history:v1` con opción de reabrir o limpiar. |
 | **M-04** | Exportar / imprimir ficha de diagnóstico para el taller | ✅ Implementado | `frontend/src/components/DiagnosticCard.tsx`, `frontend/src/App.tsx` | Botón "Imprimir / PDF" (`window.print()`) y clases `print:hidden` para imprimir solo el reporte. |
 | **M-05** | Chips rápidos de códigos OBD-II frecuentes y síntomas típicos | ✅ Implementado | `frontend/src/components/VehicleForm.tsx` | Botones rápidos (`P0300`, `P0420`, `P0171`, `P0128`, `P0442`, `P0562` y síntomas comunes) sin duplicación. |
+| **M-10** | Catálogo de marcas y modelos populares + selector de año (`<select>`) | ✅ Implementado | `frontend/src/data/vehicleCatalog.ts`, `frontend/src/components/VehicleForm.tsx` | Chips de marcas populares con modelos dinámicos asociados, `datalist` de autocompletado y selector desplegable de año (`MIN_YEAR` hasta año actual + 1). |
 
 ### P2 — Motor de Diagnóstico y Arquitectura
 
@@ -51,6 +52,7 @@ Documento generado tras la revisión multi-rol (**BMAD Party Mode**: Arquitectur
 |---|---|---|---|---|
 | **M-08** | Pruebas E2E HTTP reales sobre Express + RulesProvider | ✅ Implementado | `backend/test/e2e.test.ts` | Levanta servidor Express real en puerto efímero y valida `/api/health`, `/api/maintenance/check` y aislamiento de rate limit por `X-Forwarded-For`. |
 | **M-09** | Hardening del workflow de despliegue en VPS | ✅ Implementado | `.github/workflows/deploy.yml`, `deploy/nginx-kmcheck.conf` | Healthcheck post-deploy contra `http://127.0.0.1:${APP_PORT}/api/health` con reintentos y falla explícita si no responde. |
+| **M-11** | Contenerización y despliegue con Docker Compose | ✅ Implementado | `docker-compose.yml`, `deploy/Dockerfile.backend`, `deploy/Dockerfile.web`, `deploy/nginx-docker.conf`, `.github/workflows/deploy.yml` | Servicios `backend` (Node 22 + healthcheck) y `web` (Nginx + build multi-stage + DNS resolver interno) desplegados vía `docker compose up -d --build`. |
 
 ---
 

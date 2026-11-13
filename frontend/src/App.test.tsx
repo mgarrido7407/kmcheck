@@ -12,7 +12,7 @@ async function submitValidForm() {
   const user = userEvent.setup();
   await user.type(screen.getByLabelText(/marca/i), 'Chevrolet');
   await user.type(screen.getByLabelText(/modelo/i), 'Spark');
-  await user.type(screen.getByLabelText(/año/i), '2018');
+  await user.selectOptions(screen.getByLabelText(/año/i), '2018');
   await user.type(screen.getByLabelText(/kilometraje/i), '60000');
   await user.type(screen.getByLabelText(/obd-ii/i), 'P0300');
   await user.click(screen.getByRole('button', { name: /revisar/i }));

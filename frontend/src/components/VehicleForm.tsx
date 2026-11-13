@@ -1,6 +1,7 @@
 import { MaintenanceRequestSchema, type MaintenanceRequest } from '@kmcheck/shared';
 import { Car, LoaderCircle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { getModelsForMake, getYearOptions, POPULAR_MAKES } from '../data/vehicleCatalog';
 
 interface Props {
   onSubmit: (data: MaintenanceRequest) => void;
@@ -23,6 +24,8 @@ const QUICK_SYMPTOMS = [
   'Batería débil al encender',
 ] as const;
 
+const YEAR_OPTIONS = getYearOptions();
+
 export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Props) {
   const [values, setValues] = useState<Record<Field, string>>({
     make: '',
@@ -36,6 +39,20 @@ export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Pr
 
   const set = (field: Field) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [field]: e.target.value }));
+
+  const popularModels = getModelsForMake(values.make);
+
+  const selectMake = (make: string) => {
+    setValues((v) => {
+      const nextModels = getModelsForMake(make);
+      const keepModel = nextModels.some((m) => m.toLowerCase() === v.model.trim().toLowerCase());
+      return { ...v, make, model: keepModel ? v.model : '' };
+    });
+  };
+
+  const selectModel = (model: string) => {
+    setValues((v) => ({ ...v, model }));
+  };
 
   const appendObdCode = (code: string) => {
     setValues((v) => {
@@ -114,17 +131,39 @@ export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Pr
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="make" className="text-sm font-medium">Marca *</label>
-          <input {...fieldProps('make')} placeholder="Toyota" autoComplete="off" />
+          <input {...fieldProps('make')} list="popular-makes" placeholder="Toyota" autoComplete="off" />
+          <datalist id="popular-makes">
+            {POPULAR_MAKES.map((make) => (
+              <option key={make} value={make} />
+            ))}
+          </datalist>
           {errorFor('make')}
         </div>
         <div>
           <label htmlFor="model" className="text-sm font-medium">Modelo *</label>
-          <input {...fieldProps('model')} placeholder="Corolla" autoComplete="off" />
+          <input
+            {...fieldProps('model')}
+            list="popular-models"
+            placeholder={popularModels[0] ?? 'Corolla'}
+            autoComplete="off"
+          />
+          <datalist id="popular-models">
+            {popularModels.map((model) => (
+              <option key={model} value={model} />
+            ))}
+          </datalist>
           {errorFor('model')}
         </div>
         <div>
           <label htmlFor="year" className="text-sm font-medium">Año *</label>
-          <input {...fieldProps('year')} type="number" inputMode="numeric" placeholder="2018" />
+          <select {...fieldProps('year')}>
+            <option value="">Selecciona un año</option>
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={String(y)}>
+                {y}
+              </option>
+            ))}
+          </select>
           {errorFor('year')}
         </div>
         <div>
@@ -132,6 +171,58 @@ export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Pr
           <input {...fieldProps('mileageKm')} type="number" inputMode="numeric" placeholder="60000" />
           {errorFor('mileageKm')}
         </div>
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+        <div>
+          <p className="text-xs font-medium text-slate-600">Marcas populares</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {POPULAR_MAKES.map((make) => {
+              const selected = values.make.trim().toLowerCase() === make.toLowerCase();
+              return (
+                <button
+                  key={make}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => selectMake(make)}
+                  className={
+                    selected
+                      ? 'rounded-md border border-sky-500 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 shadow-xs'
+                      : 'rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700'
+                  }
+                >
+                  {make}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {popularModels.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-slate-600">Modelos populares de {values.make.trim()}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {popularModels.map((model) => {
+                const selected = values.model.trim().toLowerCase() === model.toLowerCase();
+                return (
+                  <button
+                    key={model}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => selectModel(model)}
+                    className={
+                      selected
+                        ? 'rounded-md border border-sky-500 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 shadow-xs'
+                        : 'rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700'
+                    }
+                  >
+                    {model}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div>

@@ -23,14 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-      - run: npm run build
-
       - name: Configurar SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -62,13 +54,14 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             ./ "${VPS_USER}@${VPS_HOST}:${REMOTE_DIR}/"
 
-      - name: Instalar dependencias, configurar .env y reiniciar PM2
+      - name: Instalar dependencias, configurar .env y levantar Docker
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
           APP_PORT: ${{ vars.APP_PORT }}
+          WEB_PORT: ${{ vars.WEB_PORT }}
           CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
           AI_PROVIDER: ${{ vars.AI_PROVIDER }}
           AI_MODEL: ${{ vars.AI_MODEL }}
@@ -77,6 +70,7 @@ jobs:
           SSH_PORT="${VPS_PORT:-22}"
           REMOTE_DIR="${VPS_DEPLOY_PATH:-/var/www/kmcheck}"
           APP_PORT_VAL="${APP_PORT:-5050}"
+          WEB_PORT_VAL="${WEB_PORT:-80}"
           CORS_VAL="${CORS_ORIGIN:-http://${VPS_HOST}}"
           AI_PROVIDER_VAL="${AI_PROVIDER:-rules}"
 
@@ -85,7 +79,7 @@ jobs:
             cd "$REMOTE_DIR"
 
             printf '%s\n' \
-              "PORT=${APP_PORT_VAL}" \
+              "PORT=5050" \
               "CORS_ORIGIN=${CORS_VAL}" \
               "TRUST_PROXY=true" \
               "AI_PROVIDER=${AI_PROVIDER_VAL}" \
@@ -96,17 +90,9 @@ jobs:
               "RATE_LIMIT_WINDOW_MS=60000" > backend/.env
             chmod 600 backend/.env
 
-            npm ci
+            APP_PORT="${APP_PORT_VAL}" WEB_PORT="${WEB_PORT_VAL}" docker compose up -d --build --remove-orphans
 
-            if ! command -v pm2 >/dev/null 2>&1; then
-              npm install -g pm2
-            fi
-
-            pm2 delete kmcheck >/dev/null 2>&1 || true
-            pm2 start npm --name "kmcheck" -- run start -w backend
-            pm2 save
-
-            for i in 1 2 3 4 5; do
+            for i in 1 2 3 4 5 6; do
               if curl -fsS "http://127.0.0.1:${APP_PORT_VAL}/api/health" >/dev/null; then
                 echo "Healthcheck OK en puerto ${APP_PORT_VAL}"
                 exit 0
@@ -114,5 +100,6 @@ jobs:
               sleep 2
             done
             echo "Error: el backend no respondió en /api/health"
+            docker compose logs --tail=50
             exit 1
           EOF

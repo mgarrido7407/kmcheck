@@ -1,0 +1,12 @@
+.git
+.github
+.wrangler
+.claude
+_bmad
+_bmad-output
+node_modules
+frontend/dist
+backend/.env
+docs
+*.md
+

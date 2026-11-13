@@ -82,6 +82,41 @@ npm run deploy                                  # verify + wrangler deploy
 
 La configuración está en `wrangler.jsonc`. **Nunca** pongas la API key en `vars`: usa `wrangler secret put`.
 
+## Despliegue con Docker (local o VPS)
+
+El proyecto incluye `docker-compose.yml` con dos servicios:
+- **`backend`**: Node 22 + Express (`deploy/Dockerfile.backend`), escuchando en el puerto interno `5050` (expuesto en `127.0.0.1:5050` para healthchecks).
+- **`web`**: build multi-stage de React servido por Nginx (`deploy/Dockerfile.web` + `deploy/nginx-docker.conf`) en el puerto `80`, con proxy de `/api/` hacia `backend:5050`.
+
+### Ejecución manual con Docker
+
+```bash
+cp backend/.env.example backend/.env   # ajusta PORT=5050, TRUST_PROXY=true y AI_PROVIDER si usas Claude
+docker compose up -d --build
+```
+
+La aplicación queda disponible en `http://localhost` (puerto `80`, personalizable con `WEB_PORT=8080 docker compose up -d --build`).
+
+### Despliegue automático en VPS (GitHub Actions)
+
+El workflow `.github/workflows/deploy.yml` sincroniza el código por `rsync` y levanta los contenedores con `docker compose up -d --build --remove-orphans`.
+
+**Requisitos en el VPS:** únicamente **Docker** y **Docker Compose** (`docker compose version`) instalados, más `curl` para el healthcheck post-deploy. No hace falta instalar Node.js ni PM2 en el servidor.
+
+**Secrets en GitHub (`Settings > Secrets and variables > Actions > Secrets`):**
+- `VPS_HOST`: IP o dominio del VPS.
+- `VPS_USER`: usuario SSH (ej. `root`).
+- `VPS_SSH_KEY`: llave privada SSH completa (sin passphrase), cuya llave pública debe estar en `~/.ssh/authorized_keys` del VPS.
+- `VPS_PORT`: *(opcional)* puerto SSH (por defecto `22`).
+- `ANTHROPIC_API_KEY`: *(opcional)* solo si usas `AI_PROVIDER=claude`.
+
+**Variables en GitHub (`Settings > Secrets and variables > Actions > Variables`):**
+- `VPS_DEPLOY_PATH`: *(opcional)* ruta destino en el VPS (por defecto `/var/www/kmcheck`).
+- `WEB_PORT`: *(opcional)* puerto público de Nginx (por defecto `80`).
+- `APP_PORT`: *(opcional)* puerto local en `127.0.0.1` para el healthcheck del backend (por defecto `5050`).
+- `CORS_ORIGIN`: *(opcional)* origen permitido (por defecto `http://<VPS_HOST>`).
+- `AI_PROVIDER` / `AI_MODEL`: *(opcional)* por defecto `rules`.
+
 ## Estructura
 
 ```

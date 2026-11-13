@@ -1,0 +1,37 @@
+{
+  "name": "kmcheck",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sistema de diagnóstico y mantenimiento vehicular (React + Express + Cloudflare Workers)",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "test": "npm run test -w shared && npm run test -w backend && npm run test -w frontend",
+    "lint": "eslint . && npm run typecheck",
+    "typecheck": "tsc -p shared --noEmit && tsc -p backend --noEmit && tsc -p frontend --noEmit",
+    "build": "npm run build -w frontend",
+    "audit:security": "node scripts/security-audit.mjs",
+    "verify": "npm run lint && npm run test && npm run build && npm run audit:security",
+    "cf:dev": "npm run build && wrangler dev",
+    "cf:check": "npm run build && wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "deploy": "npm run verify && wrangler deploy"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.161.0"
+  }
+}

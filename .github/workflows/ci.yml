@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint + typecheck
+        run: npm run lint
+      - name: Tests (sin tokens reales; proveedores de IA simulados)
+        run: npm run test
+      - name: Build del frontend
+        run: npm run build
+      - name: Auditoría de seguridad (frontend + bundle)
+        run: npm run audit:security
+      - name: Validar el bundle del Worker de Cloudflare
+        run: npx wrangler deploy --dry-run --outdir .wrangler/dry-run

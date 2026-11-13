@@ -37,11 +37,33 @@ export const OBD_CODES: Record<string, ObdEntry> = {
     detail: 'Posible sensor desconectado o defectuoso. Afecta la mezcla aire-combustible.',
     urgency: 'yellow',
   },
+  P0115: {
+    title: 'Falla en circuito del sensor de temperatura del refrigerante (ECT)',
+    detail: 'La ECU no recibe lectura confiable de temperatura. Puede dificultar el arranque en frío o activar el ventilador de forma errática.',
+    urgency: 'yellow',
+    relatedServiceIds: ['coolant'],
+  },
+  P0118: {
+    title: 'Sensor de temperatura del refrigerante (ECT): señal alta',
+    detail: 'Posible circuito abierto en el sensor o cableado. Verifica el nivel de refrigerante y el conector del sensor.',
+    urgency: 'yellow',
+    relatedServiceIds: ['coolant'],
+  },
   P0128: {
     title: 'Temperatura del refrigerante por debajo de lo esperado',
     detail: 'Termostato probablemente atascado en posición abierta. Aumenta el consumo y el desgaste.',
     urgency: 'yellow',
     relatedServiceIds: ['coolant'],
+  },
+  P0130: {
+    title: 'Sensor de oxígeno (banco 1, sensor 1): falla de circuito',
+    detail: 'Lectura incorrecta de la sonda lambda previa al catalizador. Aumenta el consumo de combustible y las emisiones.',
+    urgency: 'yellow',
+  },
+  P0135: {
+    title: 'Calentador del sensor de oxígeno (banco 1, sensor 1)',
+    detail: 'El circuito calefactor de la sonda lambda no responde. Suele requerir reemplazo del sensor o revisión de fusible.',
+    urgency: 'yellow',
   },
   P0171: {
     title: 'Mezcla pobre (banco 1)',
@@ -66,10 +88,30 @@ export const OBD_CODES: Record<string, ObdEntry> = {
     detail: 'Puede provocar que el motor se apague o no arranque.',
     urgency: 'red',
   },
+  P0325: {
+    title: 'Sensor de detonación (Knock Sensor): falla de circuito',
+    detail: 'La ECU no detecta cascabeleo y puede retrasar el encendido, reduciendo potencia y aumentando consumo.',
+    urgency: 'yellow',
+  },
+  P0340: {
+    title: 'Sensor de posición del árbol de levas (CMP)',
+    detail: 'Puede causar arranque prolongado, tironeos o apagado del motor. Revisar sensor, cableado y sincronización.',
+    urgency: 'red',
+  },
+  P0401: {
+    title: 'Flujo insuficiente en el sistema EGR',
+    detail: 'Válvula EGR o conductos obstruidos por carbonilla. Eleva la temperatura de combustión y las emisiones.',
+    urgency: 'yellow',
+  },
   P0420: {
     title: 'Eficiencia del catalizador por debajo del umbral (banco 1)',
     detail: 'El convertidor catalítico puede estar deteriorado. Verifica primero que no existan fallos de encendido.',
     urgency: 'yellow',
+  },
+  P0440: {
+    title: 'Falla general en el sistema EVAP',
+    detail: 'Posible fuga de vapores de combustible o válvula de purga defectuosa. Revisa primero la tapa del tanque.',
+    urgency: 'green',
   },
   P0442: {
     title: 'Fuga pequeña en el sistema EVAP',

@@ -64,21 +64,57 @@ export function buildUserPrompt(req: MaintenanceRequest, baseline: DiagnosticRes
 export interface ClaudeProviderOptions {
   model?: string;
   timeoutMs: number;
+  /** TTL del caché en memoria para consultas equivalentes (0 desactiva el caché). */
+  cacheTtlMs?: number;
+  now?: () => number;
+}
+
+const MAX_CACHE_ENTRIES = 200;
+
+function buildCacheKey(model: string, req: MaintenanceRequest): string {
+  const mileageBucket = Math.round(req.mileageKm / 500) * 500;
+  const codes = [...new Set(req.obdCodes)].sort().join(',');
+  return [
+    model,
+    req.make.trim().toLowerCase(),
+    req.model.trim().toLowerCase(),
+    req.year,
+    mileageBucket,
+    codes,
+    req.symptoms.trim().toLowerCase(),
+  ].join('|');
 }
 
 export class ClaudeProvider implements DiagnosticProvider {
   readonly name = 'claude';
   private readonly model: string;
+  private readonly cacheTtlMs: number;
+  private readonly now: () => number;
+  private readonly cache = new Map<string, { expiresAt: number; value: DiagnosticResponse }>();
 
   constructor(
     private readonly client: ClaudeClient,
     private readonly options: ClaudeProviderOptions,
   ) {
     this.model = options.model ?? DEFAULT_CLAUDE_MODEL;
+    this.cacheTtlMs = options.cacheTtlMs ?? 0;
+    this.now = options.now ?? Date.now;
   }
 
   async diagnose(request: MaintenanceRequest, signal: AbortSignal): Promise<DiagnosticResponse> {
-    const now = new Date();
+    const cacheKey = this.cacheTtlMs > 0 ? buildCacheKey(this.model, request) : null;
+    if (cacheKey) {
+      const hit = this.cache.get(cacheKey);
+      if (hit && hit.expiresAt > this.now()) {
+        return {
+          ...hit.value,
+          vehicle: { make: request.make, model: request.model, year: request.year, mileageKm: request.mileageKm },
+        };
+      }
+      if (hit) this.cache.delete(cacheKey);
+    }
+
+    const now = new Date(this.now());
     const baseline = rulesDiagnose(request, now);
 
     const response = await this.client.beta.messages.parse(
@@ -108,12 +144,22 @@ export class ClaudeProvider implements DiagnosticProvider {
     const output = response.parsed_output;
     if (!output) throw new ClaudeProviderError('El modelo no devolvió un JSON válido');
 
-    return {
+    const result: DiagnosticResponse = {
       vehicle: { make: request.make, model: request.model, year: request.year, mileageKm: request.mileageKm },
       ...output,
       generatedBy: 'claude',
       generatedAt: now.toISOString(),
       disclaimer: DISCLAIMER,
     };
+
+    if (cacheKey) {
+      if (this.cache.size >= MAX_CACHE_ENTRIES) {
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey !== undefined) this.cache.delete(firstKey);
+      }
+      this.cache.set(cacheKey, { expiresAt: this.now() + this.cacheTtlMs, value: result });
+    }
+
+    return result;
   }
 }

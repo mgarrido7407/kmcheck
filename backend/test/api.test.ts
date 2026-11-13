@@ -134,7 +134,8 @@ describe.each([
 
   it('GET /api/health', async () => {
     const res = await make({ provider: new RulesProvider() })('GET', '/api/health');
-    expect(res.body).toEqual({ status: 'ok', provider: 'rules-engine' });
+    expect(res.body).toMatchObject({ status: 'ok', provider: 'rules-engine' });
+    expect(typeof (res.body as { uptimeSec?: unknown }).uptimeSec).toBe('number');
   });
 
   it('envía cabeceras de seguridad y no expone x-powered-by', async () => {

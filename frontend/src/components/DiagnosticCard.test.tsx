@@ -1,5 +1,5 @@
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { sampleDiagnostic } from '../test/fixtures';
 import { DiagnosticCard, groupServices } from './DiagnosticCard';
 
@@ -17,6 +17,14 @@ describe('DiagnosticCard', () => {
     const services = screen.getByRole('heading', { name: /servicios recomendados/i }).parentElement!;
     expect(within(services).getByText('Cambio de bujías')).toBeInTheDocument();
     expect(within(services).getByText('OK')).toBeInTheDocument();
+  });
+
+  it('dispara window.print al pulsar Imprimir / PDF', () => {
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
+    render(<DiagnosticCard result={sampleDiagnostic} />);
+    fireEvent.click(screen.getByRole('button', { name: /imprimir \/ pdf/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    printSpy.mockRestore();
   });
 });
 

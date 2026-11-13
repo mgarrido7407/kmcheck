@@ -15,7 +15,11 @@ export function selectProvider(config: AppConfig): DiagnosticProvider {
     }
     registerSecret(config.ANTHROPIC_API_KEY);
     const client = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY });
-    return new ClaudeProvider(client, { model: config.AI_MODEL, timeoutMs: config.AI_TIMEOUT_MS });
+    return new ClaudeProvider(client, {
+      model: config.AI_MODEL,
+      timeoutMs: config.AI_TIMEOUT_MS,
+      cacheTtlMs: config.AI_CACHE_TTL_MS,
+    });
   }
   return new RulesProvider();
 }

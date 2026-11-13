@@ -87,6 +87,7 @@ jobs:
             printf '%s\n' \
               "PORT=${APP_PORT_VAL}" \
               "CORS_ORIGIN=${CORS_VAL}" \
+              "TRUST_PROXY=true" \
               "AI_PROVIDER=${AI_PROVIDER_VAL}" \
               "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}" \
               "AI_MODEL=${AI_MODEL}" \
@@ -104,4 +105,14 @@ jobs:
             pm2 delete kmcheck >/dev/null 2>&1 || true
             pm2 start npm --name "kmcheck" -- run start -w backend
             pm2 save
+
+            for i in 1 2 3 4 5; do
+              if curl -fsS "http://127.0.0.1:${APP_PORT_VAL}/api/health" >/dev/null; then
+                echo "Healthcheck OK en puerto ${APP_PORT_VAL}"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Error: el backend no respondió en /api/health"
+            exit 1
           EOF

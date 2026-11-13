@@ -100,4 +100,27 @@ describe('selectProvider', () => {
   it('usa Claude cuando hay API key', () => {
     expect(selectProvider(loadConfig({ AI_PROVIDER: 'claude', ANTHROPIC_API_KEY: 'sk-ant-test-0000000000' })).name).toBe('claude');
   });
+
+  it('parsea TRUST_PROXY correctamente', () => {
+    expect(loadConfig({ TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(true);
+    expect(loadConfig({ TRUST_PROXY: 'false' }).TRUST_PROXY).toBe(false);
+    expect(loadConfig({}).TRUST_PROXY).toBe(false);
+  });
+});
+
+describe('ClaudeProvider cache', () => {
+  it('reutiliza respuesta cacheada dentro del TTL y expira luego', async () => {
+    let clock = 1_000_000;
+    const { client, parse } = mockClient(ok);
+    const provider = new ClaudeProvider(client, { timeoutMs: 5000, cacheTtlMs: 60_000, now: () => clock });
+    const ac = new AbortController();
+
+    await provider.diagnose(req, ac.signal);
+    await provider.diagnose({ ...req, mileageKm: 60_050 }, ac.signal);
+    expect(parse).toHaveBeenCalledTimes(1);
+
+    clock += 61_000;
+    await provider.diagnose(req, ac.signal);
+    expect(parse).toHaveBeenCalledTimes(2);
+  });
 });

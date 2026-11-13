@@ -29,7 +29,13 @@ export function createWorkerApp(resolveDeps: (env: WorkerEnv) => WorkerDeps) {
     for (const [k, v] of Object.entries(API_SECURITY_HEADERS)) c.header(k, v);
   });
 
-  app.get('/api/health', (c) => c.json({ status: 'ok', provider: resolveDeps(c.env).provider.name }));
+  app.get('/api/health', (c) =>
+    c.json({
+      status: 'ok',
+      provider: resolveDeps(c.env).provider.name,
+      uptimeSec: typeof process !== 'undefined' && typeof process.uptime === 'function' ? Math.floor(process.uptime()) : 0,
+    }),
+  );
 
   app.post(
     '/api/maintenance/check',

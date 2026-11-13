@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { sampleDiagnostic } from './test/fixtures';
 
@@ -19,6 +19,10 @@ async function submitValidForm() {
 }
 
 describe('App (integracion con la API mockeada)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('solo llama a POST /api/maintenance/check, muestra carga y luego el diagnostico', async () => {
     let resolve!: (r: Response) => void;
     const fetchMock = vi.fn(() => new Promise<Response>((r) => (resolve = r)));
@@ -53,5 +57,15 @@ describe('App (integracion con la API mockeada)', () => {
     render(<App />);
     await submitValidForm();
     expect(await screen.findByText(/no se pudo conectar/i)).toBeInTheDocument();
+  });
+
+  it('guarda consultas recientes en localStorage y permite limpiar el historial', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, sampleDiagnostic)));
+    render(<App />);
+    await submitValidForm();
+    expect(await screen.findByRole('region', { name: /consultas recientes/i })).toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: /limpiar/i }));
+    expect(screen.queryByRole('region', { name: /consultas recientes/i })).not.toBeInTheDocument();
   });
 });

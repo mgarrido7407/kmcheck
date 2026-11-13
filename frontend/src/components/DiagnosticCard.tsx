@@ -1,5 +1,5 @@
 import { worstUrgency, type DiagnosticResponse, type Service } from '@kmcheck/shared';
-import { Activity, ChevronDown, Wrench } from 'lucide-react';
+import { Activity, ChevronDown, Printer, Wrench } from 'lucide-react';
 import { UrgencyBadge } from './UrgencyBadge';
 
 /** A partir de cuántas tareas con el mismo kilometraje se agrupan en un solo "servicio de X km". */
@@ -66,7 +66,15 @@ export function DiagnosticCard({ result }: { result: DiagnosticResponse }) {
           </h2>
           <p className="text-sm text-slate-500">{vehicle.mileageKm.toLocaleString('es-CO')} km</p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2 text-right">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 print:hidden"
+          >
+            <Printer aria-hidden="true" className="h-3.5 w-3.5" />
+            Imprimir / PDF
+          </button>
           <span className="sr-only">Estado general: </span>
           <UrgencyBadge urgency={overallStatus} large />
         </div>

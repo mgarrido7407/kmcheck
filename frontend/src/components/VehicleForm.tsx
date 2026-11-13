@@ -14,6 +14,15 @@ type Field = 'make' | 'model' | 'year' | 'mileageKm' | 'symptoms' | 'obdCodes';
 const toNumber = (v: string) => (v.trim() === '' ? undefined : Number(v));
 const topField = (path: string) => path.split('.')[0] ?? path;
 
+const QUICK_OBD_CODES = ['P0300', 'P0420', 'P0171', 'P0128', 'P0442', 'P0562'] as const;
+const QUICK_SYMPTOMS = [
+  'Tironea en ralentí',
+  'Check engine encendido',
+  'Se recalienta',
+  'Frenos chillan',
+  'Batería débil al encender',
+] as const;
+
 export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Props) {
   const [values, setValues] = useState<Record<Field, string>>({
     make: '',
@@ -27,6 +36,25 @@ export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Pr
 
   const set = (field: Field) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [field]: e.target.value }));
+
+  const appendObdCode = (code: string) => {
+    setValues((v) => {
+      const current = v.obdCodes
+        .split(/[\s,;]+/)
+        .map((c) => c.trim().toUpperCase())
+        .filter(Boolean);
+      if (current.includes(code)) return v;
+      return { ...v, obdCodes: [...current, code].join(', ') };
+    });
+  };
+
+  const appendSymptom = (phrase: string) => {
+    setValues((v) => {
+      const current = v.symptoms.trim();
+      if (current.toLowerCase().includes(phrase.toLowerCase())) return v;
+      return { ...v, symptoms: current ? `${current}; ${phrase}` : phrase };
+    });
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -109,12 +137,36 @@ export function VehicleForm({ onSubmit, loading = false, serverErrors = {} }: Pr
       <div>
         <label htmlFor="obdCodes" className="text-sm font-medium">Códigos OBD-II (opcional)</label>
         <input {...fieldProps('obdCodes')} placeholder="P0300, P0420" autoComplete="off" />
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {QUICK_OBD_CODES.map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => appendObdCode(code)}
+              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+            >
+              + {code}
+            </button>
+          ))}
+        </div>
         {errorFor('obdCodes')}
       </div>
 
       <div>
         <label htmlFor="symptoms" className="text-sm font-medium">Síntomas (opcional)</label>
         <textarea {...fieldProps('symptoms')} rows={3} placeholder="Ej.: el motor tironea en ralentí y la luz de check engine está encendida" />
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {QUICK_SYMPTOMS.map((symptom) => (
+            <button
+              key={symptom}
+              type="button"
+              onClick={() => appendSymptom(symptom)}
+              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+            >
+              + {symptom}
+            </button>
+          ))}
+        </div>
         {errorFor('symptoms')}
       </div>
 

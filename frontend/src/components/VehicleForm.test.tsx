@@ -69,4 +69,17 @@ describe('VehicleForm', () => {
     render(<VehicleForm onSubmit={vi.fn()} serverErrors={{ 'obdCodes.0': 'Código OBD-II inválido' }} />);
     expect(screen.getByText(/código obd-ii inválido/i)).toBeInTheDocument();
   });
+
+  it('permite agregar codigos OBD-II y sintomas rapidos sin duplicar', async () => {
+    const user = userEvent.setup();
+    render(<VehicleForm onSubmit={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: '+ P0300' }));
+    await user.click(screen.getByRole('button', { name: '+ P0300' }));
+    await user.click(screen.getByRole('button', { name: '+ P0420' }));
+    expect(screen.getByLabelText(/obd-ii/i)).toHaveValue('P0300, P0420');
+
+    await user.click(screen.getByRole('button', { name: '+ Tironea en ralentí' }));
+    await user.click(screen.getByRole('button', { name: '+ Tironea en ralentí' }));
+    expect(screen.getByLabelText(/síntomas/i)).toHaveValue('Tironea en ralentí');
+  });
 });

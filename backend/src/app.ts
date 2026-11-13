@@ -10,6 +10,7 @@ export interface AppOptions {
   provider: DiagnosticProvider;
   timeoutMs?: number;
   corsOrigin?: string;
+  trustProxy?: boolean;
   rateLimit?: { max: number; windowMs: number };
 }
 
@@ -17,10 +18,12 @@ export function createApp({
   provider,
   timeoutMs = 30000,
   corsOrigin = 'http://localhost:3000',
+  trustProxy = false,
   rateLimit = { max: 20, windowMs: 60000 },
 }: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
+  if (trustProxy) app.set('trust proxy', 1);
   app.use((_req, res, next) => {
     for (const [k, v] of Object.entries(API_SECURITY_HEADERS)) res.setHeader(k, v);
     next();
@@ -29,7 +32,7 @@ export function createApp({
   app.use(express.json({ limit: '16kb' }));
 
   app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', provider: provider.name });
+    res.json({ status: 'ok', provider: provider.name, uptimeSec: Math.floor(process.uptime()) });
   });
   app.use('/api/maintenance', maintenanceRouter(provider, timeoutMs, new FixedWindowRateLimiter(rateLimit.max, rateLimit.windowMs)));
 

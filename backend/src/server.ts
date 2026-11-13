@@ -10,6 +10,7 @@ const app = createApp({
   provider,
   timeoutMs: config.AI_TIMEOUT_MS,
   corsOrigin: config.CORS_ORIGIN,
+  trustProxy: config.TRUST_PROXY,
   rateLimit: { max: config.RATE_LIMIT_MAX, windowMs: config.RATE_LIMIT_WINDOW_MS },
 });
 
